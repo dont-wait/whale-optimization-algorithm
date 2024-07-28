@@ -12,7 +12,7 @@ class AnimateScatter():
         self.ymin = ymin
         self.ymax = ymax
         
-        self.fig, self.ax = plt.subplots
+        self.fig, self.ax = plt.subplots()
         
         self.c = col # colour
         self.func = func
@@ -24,7 +24,22 @@ class AnimateScatter():
         xx, yy = np.meshgrid(self.x, self.y, sparse=True)
         self.z = self.func(xx, yy)
         self.update(pos)
+
         
     def draw_background(self):
         self.ax.contourf(self.x, self.y, self.z)
+    
+    
+    def update_canvas(self):
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+
+
+    def update(self, pos):
+        self.ax.clear()
+        self.ax.axis([self.xmin, self.xmax, self.ymin, self.ymax])
+        self.draw_background()
+        self.ax.scatter(pos[:, 0], pos[:, 1], s=30, c=self.c)
+        self.update_canvas()
+        time.sleep(self.t)
         

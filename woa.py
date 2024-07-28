@@ -4,22 +4,22 @@ class WOA():
     def __init__(self, fitness_func, constants, n_solutions, b, a, a_step
                  , maximize=False):
         self._fitness_func = fitness_func
-        self._constants = constants # lb up
+        self._constraints = constants # lb up
         self._solutions = self._init_solutions(n_solutions) # best_solutions if end for
         self._b = b
         self._a = a
         self._a_step = a_step
         self.maximize = maximize
-        self._best_solution = []
+        self._best_solutions = []
     
     
     # Khởi tạo quần thể    
     def _init_solutions(self, n_solutions):
         solutions = [] 
-        for c in self._constants:
+        for c in self._constraints:
             solutions.append(np.random.uniform(c[0], c[1], size= n_solutions))
-        solutions = np.stack(solutions, axis=-1)
-        
+       
+        solutions = np.stack(solutions, axis=-1) 
         return solutions
     
     
@@ -27,7 +27,7 @@ class WOA():
     # Ensure solution don't out by side lower, upper bound
     def _constrain_solution(self, solution):
         constrain_s = []
-        for c, s in zip(self._constants, solution):
+        for c, s in zip(self._constraints, solution):
             if c[0] > s:
                 s = c[0] 
             elif c[1] < s:
@@ -42,16 +42,16 @@ class WOA():
         
         """Sắp xếp lại thứ tự theo fitness giảm dần"""
         # Càng nhỏ thì càng đúng
-        idx = np.argsort(fitness_score)[::-1] if self._maximize else np.argsort(fitness_score)
+        idx = np.argsort(fitness_score)[::-1] if self.maximize else np.argsort(fitness_score)
         # Tạo 1 mảng lần lượt chứa các giá trị fitness thì nhỏ đến cao
         # Nhỏ nhất là tốt nhất trong case này
         rank_solutions = self._solutions[idx] 
         # Lấy ra điểm + giải pháp tương ứng với điểm đó
-        self._best_solution.append((fitness_score[idx[0]], rank_solutions[0]))
+        self._best_solutions.append((fitness_score[idx[0]], rank_solutions[0]))
         return rank_solutions
         
         
-    def _get_solutions(self): 
+    def get_solutions(self): 
         return self._solutions
     
     
@@ -59,7 +59,7 @@ class WOA():
     # A[2, 0]
     def _compute_A(self):
         r = np.random.uniform(0.0, 1.0, size=2)
-        return 2 * np.multiply(self._a * r) - self._a
+        return 2 * np.multiply(self._a, r) - self._a
     
     
     def _compute_C(self):
@@ -81,13 +81,13 @@ class WOA():
     
     
     #Thực hiện tìm kiếm con mồi | khám phá
-    def _search_D(self, solutions, random_solution):
+    def _search_D(self, solution, random_solution):
         C = self._compute_C() # C = 2r
-        return np.linalg.norm(np.multiply(C, random_solution) - solutions) # 2.7
+        return np.linalg.norm(np.multiply(C, random_solution) - solution) # 2.7
     
     
     def _search(self, solution, random_solution, A):
-        D = self._search_D(solution, random_solution, A)
+        D = self._search_D(solution, random_solution)
         return random_solution - np.multiply(A, D) # 2.8
     
     
@@ -104,12 +104,12 @@ class WOA():
     def print_best_solutions(self):
         print('generation best solution history')
         print('([fitness], [solution])')
-        for s in self._best_solution:
+        for s in self._best_solutions:
             print(s)
         print(end='\n')
         print('best solution')
         print('([fitness], [solution])')
-        print(sorted(self._best_solution, key=lambda x:x[0], reverse=self.maximize[0]))
+        print(sorted(self._best_solutions, key=lambda x:x[0], reverse=self.maximize)[0])
    
    
     def optimize(self):
@@ -120,17 +120,18 @@ class WOA():
        
         for s in rank_solution[1:]:
             if p > 0.5:
-               A = self._compute_A
+               A = self._compute_A()
                norm_A = np.linalg.norm(A)
                if norm_A < 1.0:
                    new_s = self._encircle(s, best_solution, A)
                else:
-                    random_solution = self._solutions[np.random.randint(self._solution.shape[0])] # Chọn 1 con trong đàn
+                    random_solution = self._solutions[np.random.randint(self._solutions.shape[0])] # Chọn 1 con trong đàn
                     new_s = self._search(s, random_solution, A) # bơi theo con đó
             elif p < 0.5:
                 new_s = self._attack(s, best_solution)
-            new_solutions.append(self._constants(new_s))
-        self._solutions = np.stack(new_s)
+            new_solutions.append(self._constrain_solution(new_s))
+       
+        self._solutions = np.stack(new_solutions)
         self._a -= self._a_step      
                 
        
