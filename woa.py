@@ -1,9 +1,9 @@
 import numpy as np
 
 class WOA():
-    def __init__(self, fitness_func, constants, n_solutions, b, a, a_step
+    def __init__(self, objective_func, constants, n_solutions, b, a, a_step
                  , maximize=False):
-        self._fitness_func = fitness_func
+        self.fitness = objective_func
         self._constraints = constants # lb up
         self._solutions = self._init_solutions(n_solutions) # best_solutions if end for
         self._b = b
@@ -29,7 +29,7 @@ class WOA():
         constrain_s = []
         for c, s in zip(self._constraints, solution):
             if c[0] > s:
-                s = c[0] 
+                s = c[0]
             elif c[1] < s:
                 s = c[1]
             constrain_s.append(s)
@@ -38,7 +38,7 @@ class WOA():
     
     def _rank_solution(self):
         """Find best solution"""
-        fitness_score = self._fitness_func(self._solutions[:, 0], self._solutions[:, 1])
+        fitness_score = self.fitness(self._solutions[:, 0], self._solutions[:, 1])
         
         """Sắp xếp lại thứ tự theo fitness giảm dần"""
         # Càng nhỏ thì càng đúng
@@ -66,6 +66,26 @@ class WOA():
         return 2 * np.random.uniform(0.0, 1.0, size=2)
     
     
+    '''======================================================================'''
+    """1. Search for prey - Tìm kiếm con mồi"""
+    """If |A| >= 1"""
+    
+    #Thực hiện tìm kiếm con mồi | khám phá
+    def _search_D(self, solution, random_solution):
+        C = self._compute_C() # C = 2r
+        return np.linalg.norm(np.multiply(C, random_solution) - solution) # 2.7
+    
+    
+    def _search(self, solution, random_solution, A):
+        D = self._search_D(solution, random_solution)
+        return random_solution - np.multiply(A, D) # 2.8
+    '''======================================================================'''
+    
+    
+    '''======================================================================'''
+    """2. Encircling prey - Bao vây con mồi"""
+    """If |A| < 1"""
+    
     # Cập nhật vị trí theo con đầu đàn
     # Tiến lại gần con đầu đàn hơn
     # Update position to leader_pos
@@ -78,27 +98,19 @@ class WOA():
     def _encircle(self, solution, best_solution, A):
         D = self._encircle_D(solution, best_solution)
         return best_solution - np.multiply(A, D) # 2.2
+    '''======================================================================'''
     
     
-    #Thực hiện tìm kiếm con mồi | khám phá
-    def _search_D(self, solution, random_solution):
-        C = self._compute_C() # C = 2r
-        return np.linalg.norm(np.multiply(C, random_solution) - solution) # 2.7
-    
-    
-    def _search(self, solution, random_solution, A):
-        D = self._search_D(solution, random_solution)
-        return random_solution - np.multiply(A, D) # 2.8
-    
-    
-    # Tấn công xoắn ốc
-    # Bubble-net attacking
+    '''======================================================================'''
+    """3. Bubble-net attacking - Tấn công bong bóng"""
+    # If p < 0.5
     def _attack(self, solution, best_solution):
         D = np.linalg.norm(best_solution - solution)
         L = np.random.uniform(-1.0, 1.0, size=2)
         return np.multiply(np.multiply(D, np.exp(self._b)), 
                            np.cos(2.0 * np.pi * L)
                           )
+    '''======================================================================'''
     
     
     def print_best_solutions(self):
