@@ -17,6 +17,7 @@ class AnimateScatter():
         self.c = col # colour
         self.func = func
         self.t = t
+        self.iteration = 0
         
         #init whitespace
         self.x = np.arange(self.xmin, self.xmax + resolution, resolution)
@@ -40,6 +41,15 @@ class AnimateScatter():
         self.ax.axis([self.xmin, self.xmax, self.ymin, self.ymax])
         self.draw_background()
         self.ax.scatter(pos[:, 0], pos[:, 1], s=30, c=self.c)
+        
+        # Display the current loop iteration
+        self.ax.text(0.95, 0.05, f'Iteration: {self.iteration}', 
+                     verticalalignment='bottom', horizontalalignment='right',
+                     transform=self.ax.transAxes, 
+                     color='black', fontsize=12, fontweight='bold')
+        
         self.update_canvas()
         time.sleep(self.t)
+        
+        self.iteration += 1  # Increment the iteration counter
         
